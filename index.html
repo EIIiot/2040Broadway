@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>2040 Broadway - Joske's Picks</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: sans-serif;
+      animation: fadeIn 1s ease-in;
+      overflow: hidden; /* Prevent page scroll */
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    #banner {
+      background-color: #5c0e07;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      height: 80px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      flex-shrink: 0;
+    }
+
+    #banner a {
+      display: inline-block;
+    }
+
+    #logo {
+      height: 50px;
+      cursor: pointer;
+    }
+
+    #container {
+      display: flex;
+      height: calc(100vh - 80px); /* full viewport minus banner */
+      overflow: hidden;
+    }
+
+    #map {
+      flex: 3;
+      height: 100%;
+    }
+
+    #sidebar {
+      flex: 1;
+      padding: 16px;
+      box-sizing: border-box;
+      background-color: #d3d3d3;
+      color: rgb(0, 0, 0);
+      overflow: hidden;  /* no scrolling */
+      height: 100%; /* fill container height */
+      transform: translateX(100%);
+      opacity: 0;
+      transition: transform 1.5s ease, opacity 1.5s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Class to trigger slide-in */
+    #sidebar.slide-in {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    #place-image {
+      width: 100%;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+
+    #sidebar h2 {
+      margin-top: 0;
+      flex-shrink: 0;
+    }
+
+    #sidebar p {
+      margin: 4px 0;
+      flex-shrink: 0;
+    }
+
+    #sidebar a {
+      margin-top: auto; /* Push the link to the bottom */
+      color: blue;
+      text-decoration: underline;
+      flex-shrink: 0;
+    }
+
+    .gm-style-iw .gm-ui-hover-effect {
+      display: none !important;
+    }
+  </style>
+
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGxMWMZqAdme8MEVOBxl-GzJjCujz9STU&libraries=places&callback=initMap" async defer></script>
+
+  <script>
+    let map, placesService, lastClickedMarker = null;
+
+    const locations = [
+      { title: "Atelier Crenn Restaurant", position: { lat: 37.7983315, lng: -122.4359605 }, placeId: "ChIJx1ULhNCAhYARSRq9NDWTeqI" },
+      { title: "Coffee Bodega Cafe", position: { lat: 37.7969706, lng: -122.4356407 }, placeId: "ChIJcece8T-BhYARb911jLuYitU" },
+      { title: "Harris' Restaurant", position: { lat: 37.7950165, lng: -122.4229973 }, placeId: "ChIJLx999umAhYARmyUFkEcxfOw" },
+      { title: "House of Prime Rib", position: { lat: 37.7934329, lng: -122.422732 }, placeId: "ChIJg67caeqAhYAR2UQjKb1a8j4" },
+      { title: "Jake's Steaks", position: { lat: 37.8004953, lng: -122.432995 }, placeId: "ChIJyeRZMdqAhYAR7ZK_DUQIEyI" },
+      { title: "La Mediterranee", position: { lat: 37.7901451, lng: -122.4338461 }, placeId: "ChIJO_VxP8aAhYARYcwPRkTq51c" },
+      { title: "Marina Submarine Cafe", position: { lat: 37.7968003, lng: -122.4370004 }, placeId: "ChIJLeGcQ9CAhYAR9WfvtgxAnJ8" },
+      { title: "Rapha San Francisco Cafe", position: { lat: 37.7981468, lng: -122.4355866 }, placeId: "ChIJE2g1gNCAhYARF_--nuW3E58" },
+      { title: "Roam Artisan Burgers", position: { lat: 37.7978639, lng: -122.4285738 }, placeId: "ChIJbzXMtNyAhYAR9bDkoIa3BaI" },
+      { title: "Tadaima Marina Cafe", position: { lat: 37.7976647, lng: -122.4297214 }, placeId: "ChIJhRXN3DmBhYARQn9FFaMMsos" },
+      { title: "Telve Cafe", position: { lat: 37.7970607, lng: -122.4348691 }, placeId: "ChIJl3zZA5mBhYARsY1hnmNbFFA" },
+      { title: "Terzo", position: { lat: 37.7971169, lng: -122.4373905 }, placeId: "ChIJK8BnWtCAhYAR-QPED11PXEY" },
+      { title: "The Epicurean Trader Cafe", position: { lat: 37.7975803, lng: -122.4309186 }, placeId: "ChIJX5krlNqAhYAR-D2T-7XPvzs" },
+      { title: "Zushi Puzzle", position: { lat: 37.8004466, lng: -122.4331589 }, placeId: "ChIJy-nXMNqAhYAR40z3pkUofL8" },
+    ];
+
+    function initMap() {
+      const center = { lat: 37.7924, lng: -122.4313 };
+      map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 14,
+        center,
+      });
+
+      placesService = new google.maps.places.PlacesService(map);
+
+      const homeIcon = {
+        url: "https://upload.wikimedia.org/wikipedia/commons/e/e6/Home_icon_black.png",
+        scaledSize: new google.maps.Size(32, 32),
+      };
+
+      const broadwayMarker = new google.maps.Marker({
+        position: { lat: 37.795054, lng: -122.431241 },
+        map,
+        title: "2040 Broadway St",
+        icon: homeIcon,
+      });
+
+      const homeInfo = new google.maps.InfoWindow({
+        content: `
+          <div style="
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.85);
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+          ">
+            2040 Broadway St
+          </div>
+        `,
+      });
+
+      homeInfo.open(map, broadwayMarker);
+
+      const defaultIcon = {
+        url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+        scaledSize: new google.maps.Size(32, 32),
+      };
+
+      const hoverIcon = {
+        url: "http://maps.google.com/mapfiles/ms/icons/orange-dot.png",
+        scaledSize: new google.maps.Size(32, 32),
+      };
+
+      const clickedIcon = {
+        url: "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png",
+        scaledSize: new google.maps.Size(32, 32),
+      };
+
+      locations.forEach(({ position, title, placeId }) => {
+        const marker = new google.maps.Marker({
+          position,
+          map,
+          title,
+          icon: defaultIcon,
+        });
+
+        marker.addListener("click", () => {
+          if (lastClickedMarker && lastClickedMarker !== marker) {
+            lastClickedMarker.setIcon(defaultIcon);
+          }
+
+          marker.setIcon(clickedIcon);
+          lastClickedMarker = marker;
+
+          if (!placeId) {
+            document.getElementById("sidebar").innerHTML = `<h2>${title}</h2><p>No placeId added yet.</p>`;
+            return;
+          }
+
+          placesService.getDetails({ placeId }, (place, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK) {
+              updateSidebar(place);
+            } else {
+              document.getElementById("sidebar").innerHTML = `<h2>${title}</h2><p>Details not available.</p>`;
+            }
+          });
+        });
+
+        marker.addListener("mouseover", () => {
+          if (lastClickedMarker !== marker) {
+            marker.setIcon(hoverIcon);
+          }
+        });
+
+        marker.addListener("mouseout", () => {
+          if (lastClickedMarker !== marker) {
+            marker.setIcon(defaultIcon);
+          }
+        });
+      });
+    }
+
+    function updateSidebar(place) {
+      const description = place.editorial_summary?.overview || place.editorial_summary?.tagline || "No description available.";
+      document.getElementById("sidebar").innerHTML = `
+        <h2>${place.name}</h2>
+        ${place.photos ? `<img id="place-image" src="${place.photos[0].getUrl({ maxWidth: 400 })}">` : ""}
+        <p><strong>Rating:</strong> ${place.rating || "N/A"}</p>
+        <p><strong>Address:</strong> ${place.formatted_address}</p>
+        <p>${description}</p>
+        <a href="${place.url}" target="_blank">Open in Google Maps</a>
+      `;
+    }
+
+    // Trigger sidebar slide-in after page load
+    window.addEventListener('load', () => {
+      const sidebar = document.getElementById('sidebar');
+      setTimeout(() => {
+        sidebar.classList.add('slide-in');
+      }, 50);
+    });
+  </script>
+</head>
+<body>
+  <header id="banner">
+    <a href="https://joske.org/" target="_blank" rel="noopener noreferrer">
+      <img src="https://media-production.lp-cdn.com/cdn-cgi/image/format=auto,quality=85/https://media-production.lp-cdn.com/media/osnhyasc3cibgvwop68s" alt="Logo" id="logo" />
+    </a>
+  </header>
+  <div id="container">
+    <div id="map"></div>
+    <div id="sidebar">
+      <p>Click a marker to view details here.</p>
+    </div>
+  </div>
+</body>
+</html>
