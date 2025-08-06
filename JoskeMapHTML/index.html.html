@@ -107,7 +107,7 @@
     #restaurant-details {
       flex-grow: 1;
       overflow-y: auto;
-      padding-bottom: 20px; /* Prevent content cutoff */
+      padding-bottom: 20px;
     }
 
     #place-image {
@@ -136,7 +136,6 @@
     }
     #sidebar a:hover { background-color: #54160d; color: white; }
 
-    /* Hide the close ("X") button on the InfoWindow */
     .gm-style-iw .gm-ui-hover-effect {
       display: none !important;
     }
@@ -145,28 +144,12 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGxMWMZqAdme8MEVOBxl-GzJjCujz9STU&libraries=places&callback=initMap" async defer></script>
 
   <script>
-    async function loadBase64Images() {
-      const locations = [
-        { title: "Atelier Crenn Restaurant", imageFile: "ateliercrenn.txt" },
-        { title: "Coffee Bodega Cafe", imageFile: "bodegacoffee.txt" },
-        { title: "Harris' Restaurant / San Francisco Steakhouse", imageFile: "harris.txt" },
-        { title: "Zushi Puzzle", imageFile: "zushi.txt" },
-        { title: "Tadaima Marina Cafe", imageFile: "tadaima.txt" }
-      ];
-      const imageMap = {};
-      await Promise.all(locations.map(async loc => {
-        const res = await fetch(`images/${loc.imageFile}`);
-        imageMap[loc.title] = await res.text();
-      }));
-      return imageMap;
-    }
-
     const locationConfigs = [
-      { title: "Atelier Crenn Restaurant", position: { lat: 37.7983315, lng: -122.4359605 }, placeId: "ChIJx1ULhNCAhYARSRq9NDWTeqI" },
-      { title: "Coffee Bodega Cafe", position: { lat: 37.7969706, lng: -122.4356407 }, placeId: "ChIJcece8T-BhYARb911jLuYitU" },
-      { title: "Harris' Restaurant / San Francisco Steakhouse", position: { lat: 37.7950165, lng: -122.4229973 }, placeId: "ChIJLx999umAhYARmyUFkEcxfOw" },
-      { title: "Zushi Puzzle", position: { lat: 37.800370, lng: -122.433144 }, placeId: "ChIJy-nXMNqAhYAR40z3pkUofL8" },
-      { title: "Tadaima Marina Cafe", position: { lat: 37.797761, lng: -122.429748 }, placeId: "ChIJhRXN3DmBhYARQn9FFaMMsos" }
+      { title: "Atelier Crenn Restaurant", position: { lat: 37.7983315, lng: -122.4359605 }, placeId: "ChIJx1ULhNCAhYARSRq9NDWTeqI", imageFile: "AtelierCrenn.png" },
+      { title: "Coffee Bodega Cafe", position: { lat: 37.7969706, lng: -122.4356407 }, placeId: "ChIJcece8T-BhYARb911jLuYitU", imageFile: "BodegaCoffee.png" },
+      { title: "Harris' Restaurant / San Francisco Steakhouse", position: { lat: 37.7950165, lng: -122.4229973 }, placeId: "ChIJLx999umAhYARmyUFkEcxfOw", imageFile: "Harris.png" },
+      { title: "Zushi Puzzle", position: { lat: 37.800370, lng: -122.433144 }, placeId: "ChIJy-nXMNqAhYAR40z3pkUofL8", imageFile: "Zushi.png" },
+      { title: "Tadaima Marina Cafe", position: { lat: 37.797761, lng: -122.429748 }, placeId: "ChIJhRXN3DmBhYARQn9FFaMMsos", imageFile: "Tadaima.png" }
     ];
 
     let listContainer, detailsContainer, closeDetailsBtn;
@@ -178,33 +161,32 @@
       listContainer = document.getElementById('list-container');
       detailsContainer = document.getElementById('details-container');
       closeDetailsBtn = document.getElementById('close-details');
-
       closeDetailsBtn.addEventListener('click', showList);
     });
 
     function showDetails() {
       listContainer.style.display = 'none';
       detailsContainer.style.display = 'block';
-      document.getElementById('sidebar-header').style.display = 'none'; // Hide header
+      document.getElementById('sidebar-header').style.display = 'none';
     }
 
     function showList() {
-      document.getElementById('sidebar-header').style.display = 'block'; // Show header
+      document.getElementById('sidebar-header').style.display = 'block';
       detailsContainer.style.display = 'none';
       listContainer.style.display = 'block';
       if (lastClickedMarker) {
         const prevIndex = markers.indexOf(lastClickedMarker);
-        lastClickedMarker.setIcon(createCircularMarkerIcon(locationConfigs[prevIndex].base64Image, 40));
+        lastClickedMarker.setIcon(createCircularMarkerIcon(`images/${locationConfigs[prevIndex].imageFile}`, 40));
         lastClickedMarker = null;
       }
       document.querySelectorAll('#restaurant-list li').forEach(li => li.classList.remove('selected'));
     }
 
-    function createCircularMarkerIcon(base64Image, size = 40) {
+    function createCircularMarkerIcon(url, size = 40) {
       const svg = `
         <svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'>
           <circle cx='${size/2}' cy='${size/2}' r='${size/2}' fill='white' stroke='black' stroke-width='2'/>
-          <image href='data:image/png;base64,${base64Image.trim()}' x='0' y='0' height='${size}' width='${size}' clip-path='circle(${size/2}px at ${size/2}px ${size/2}px)'/>
+          <image href='${url}' x='0' y='0' height='${size}' width='${size}' clip-path='circle(${size/2}px at ${size/2}px ${size/2}px)'/>
         </svg>`;
       return {
         url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
@@ -216,19 +198,16 @@
       const detailsEl = document.getElementById('restaurant-details');
       let html = `<h2>${place.name}</h2>`;
 
-      if (place.photos && place.photos.length > 0) {
-        const photoUrl = place.photos[0].getUrl({ maxWidth: 400, maxHeight: 300 });
-        html += `<img id="place-image" src="${photoUrl}" alt="${place.name}">`;
+      if (place.photos?.length) {
+        html += `<img id="place-image" src="${place.photos[0].getUrl({ maxWidth: 400, maxHeight: 300 })}" alt="${place.name}">`;
       }
       if (place.formatted_address) html += `<p><strong>Address:</strong> ${place.formatted_address}</p>`;
       if (place.formatted_phone_number) html += `<p><strong>Phone:</strong> ${place.formatted_phone_number}</p>`;
       if (place.rating) html += `<p><strong>Rating:</strong> ${place.rating} / 5</p>`;
       if (place.website) html += `<p><a href="${place.website}" target="_blank" rel="noopener noreferrer">Visit Website</a></p>`;
-      if (place.reviews && place.reviews.length > 0) {
+      if (place.reviews?.length) {
         html += `<h3>Reviews:</h3><ul>`;
-        place.reviews.slice(0, 3).forEach(review => {
-          html += `<li><strong>${review.author_name}:</strong> ${review.text}</li>`;
-        });
+        place.reviews.slice(0, 3).forEach(r => html += `<li><strong>${r.author_name}:</strong> ${r.text}</li>`);
         html += `</ul>`;
       }
 
@@ -237,21 +216,17 @@
 
       if (lastClickedMarker && lastClickedMarker !== marker) {
         const prevIndex = markers.indexOf(lastClickedMarker);
-        lastClickedMarker.setIcon(createCircularMarkerIcon(locationConfigs[prevIndex].base64Image, 40));
+        lastClickedMarker.setIcon(createCircularMarkerIcon(`images/${locationConfigs[prevIndex].imageFile}`, 40));
       }
-      marker.setIcon(createCircularMarkerIcon(location.base64Image, 48));
+      marker.setIcon(createCircularMarkerIcon(`images/${location.imageFile}`, 48));
       lastClickedMarker = marker;
 
-      const listEl = document.getElementById('restaurant-list');
-      [...listEl.children].forEach((li, liIndex) => {
-        li.classList.toggle('selected', liIndex === index);
+      document.querySelectorAll('#restaurant-list li').forEach((li, i) => {
+        li.classList.toggle('selected', i === index);
       });
     }
 
-    async function initMap() {
-      const base64Images = await loadBase64Images();
-      locationConfigs.forEach(loc => loc.base64Image = base64Images[loc.title] || "");
-
+    function initMap() {
       const center = { lat: 37.7973255, lng: -122.4329618 };
       map = new google.maps.Map(document.getElementById("map"), {
         zoom: 16,
@@ -275,116 +250,72 @@
         icon: homeIcon,
       });
       const homeInfo = new google.maps.InfoWindow({
-        content: `
-          <div style="
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 12px;
-            background: rgba(255, 255, 255, 0.85);
-            padding: 1px 2px;
-            border-radius: 1px;
-            white-space: nowrap;
-          ">
-            2040 Broadway St
-          </div>
-        `,
+        content: `<div style="font-weight:bold; font-size:12px;">2040 Broadway St</div>`,
       });
-
       homeInfo.open(map, homeMarker);
 
       const listEl = document.getElementById('restaurant-list');
       markers.length = 0;
 
-      locationConfigs.forEach((location, index) => {
+      locationConfigs.forEach((loc, index) => {
+        const imgUrl = `images/${loc.imageFile}`;
         const marker = new google.maps.Marker({
-          position: location.position,
+          position: loc.position,
           map,
-          title: location.title,
-          icon: createCircularMarkerIcon(location.base64Image, 40),
+          title: loc.title,
+          icon: createCircularMarkerIcon(imgUrl, 40),
         });
         markers.push(marker);
 
         marker.addListener("click", () => {
-          placesService.getDetails({ placeId: location.placeId }, (place, status) => {
+          placesService.getDetails({ placeId: loc.placeId }, (place, status) => {
             if (status === google.maps.places.PlacesServiceStatus.OK) {
-              updateSidebar(place, location, marker, index);
-            } else {
-              document.getElementById('restaurant-details').innerHTML = `<h2>${location.title}</h2><p>Details not available.</p>`;
-              showDetails();
+              updateSidebar(place, loc, marker, index);
             }
           });
         });
-
         marker.addListener("mouseover", () => {
-          if (lastClickedMarker !== marker) marker.setIcon(createCircularMarkerIcon(location.base64Image, 48));
+          if (lastClickedMarker !== marker) marker.setIcon(createCircularMarkerIcon(imgUrl, 48));
         });
         marker.addListener("mouseout", () => {
-          if (lastClickedMarker !== marker) marker.setIcon(createCircularMarkerIcon(location.base64Image, 40));
+          if (lastClickedMarker !== marker) marker.setIcon(createCircularMarkerIcon(imgUrl, 40));
         });
 
         const li = document.createElement('li');
-
-        // Add thumbnail
         const img = document.createElement('img');
-        img.src = `data:image/png;base64,${location.base64Image.trim()}`;
+        img.src = imgUrl;
         img.className = 'restaurant-thumb';
         const span = document.createElement('span');
-        span.textContent = location.title;
-
-        li.appendChild(img);
-        li.appendChild(span);
+        span.textContent = loc.title;
+        li.append(img, span);
 
         li.addEventListener('mouseenter', () => {
-          if (lastClickedMarker !== marker) marker.setIcon(createCircularMarkerIcon(location.base64Image, 48));
+          if (lastClickedMarker !== marker) marker.setIcon(createCircularMarkerIcon(imgUrl, 48));
         });
         li.addEventListener('mouseleave', () => {
-          if (lastClickedMarker !== marker) marker.setIcon(createCircularMarkerIcon(location.base64Image, 40));
+          if (lastClickedMarker !== marker) marker.setIcon(createCircularMarkerIcon(imgUrl, 40));
         });
-        li.addEventListener('click', () => {
-          google.maps.event.trigger(marker, 'click');
-        });
+        li.addEventListener('click', () => google.maps.event.trigger(marker, 'click'));
 
         listEl.appendChild(li);
-      });
-
-      map.addListener('click', () => {
-        if (!lastClickedMarker) return;
-        showList();
       });
     }
   </script>
 </head>
 <body>
   <header id="banner">
-    <a href="https://joske.org/" target="_blank" rel="noopener noreferrer">
+    <a href="https://joske.org/" target="_blank">
       <img src="https://media-production.lp-cdn.com/cdn-cgi/image/format=auto,quality=85/https://media-production.lp-cdn.com/media/osnhyasc3cibgvwop68s" alt="Logo" id="logo" />
     </a>
   </header>
   <div id="container">
     <div id="map"></div>
     <div id="sidebar">
-      <div id="sidebar-header">
-        <h1>Joske's Picks</h1>
-      </div>
-
-      <div id="list-container">
-        <ul id="restaurant-list"></ul>
-      </div>
+      <div id="sidebar-header"><h1>Joske's Picks</h1></div>
+      <div id="list-container"><ul id="restaurant-list"></ul></div>
       <div id="details-container" style="display:none;">
-        <button id="close-details" style="
-          background: none;
-          border: none;
-          font-size: 1.5rem;
-          font-weight: bold;
-          cursor: pointer;
-          padding: 0 0 10px 0;
-          color: #4d4d4d;
-        ">x</button>
-        <div id="restaurant-details">
-          <p>Click a marker or a restaurant above to view details here.</p>
-        </div>
+        <button id="close-details" style="background:none;border:none;font-size:1.5rem;font-weight:bold;cursor:pointer;">x</button>
+        <div id="restaurant-details"><p>Click a marker or restaurant to view details.</p></div>
       </div>
     </div>
   </div>
