@@ -183,6 +183,11 @@
     }
 
     function createCircularMarkerIcon(url, size = 40) {
+      // If the url is relative, prepend your site origin or full URL:
+      if (!url.startsWith('http')) {
+        url = window.location.origin + '/' + url;
+      }
+    
       const svg = `
         <svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'>
           <circle cx='${size/2}' cy='${size/2}' r='${size/2}' fill='white' stroke='black' stroke-width='2'/>
