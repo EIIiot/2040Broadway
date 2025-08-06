@@ -155,7 +155,7 @@
       ];
       const imageMap = {};
       await Promise.all(locations.map(async loc => {
-        const res = await fetch(`images/${loc.imageFile}`);
+        const res = await fetch(`${loc.imageFile}`);
         imageMap[loc.title] = await res.text();
       }));
       return imageMap;
