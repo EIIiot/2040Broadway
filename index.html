@@ -286,7 +286,7 @@
       listEl.innerHTML = '';
 
       locationConfigs.forEach((loc, index) => {
-        const imgUrl = `images/${loc.imageFile}`;
+        const imgUrl = new URL(`images/${loc.imageFile}`, window.location.origin).href;
         const marker = new google.maps.Marker({
           position: loc.position,
           map,
