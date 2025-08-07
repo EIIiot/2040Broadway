@@ -203,11 +203,14 @@
       const detailsEl = document.getElementById('restaurant-details');
       let html = `<h2>${place.name}</h2>`;
     
-      // Show local image if photo fails
+      // Photo with fallback for CORS issues or missing images
       if (place.photos?.length) {
         const photoUrl = place.photos[0].getUrl({ maxWidth: 400, maxHeight: 300 });
         html += `
-          <img id="place-image" src="${photoUrl}" alt="${place.name}" onerror="this.onerror=null;this.src='images/${location.imageFile}'" />
+          <img id="place-image"
+               src="${photoUrl}"
+               alt="${place.name}"
+               onerror="this.onerror=null;this.src='images/${location.imageFile}'" />
         `;
       } else {
         html += `<img id="place-image" src="images/${location.imageFile}" alt="${place.name}" />`;
@@ -225,6 +228,24 @@
         });
         html += `</ul>`;
       }
+    
+      detailsEl.innerHTML = html;
+      showDetails();
+    
+      // Update marker icons
+      if (lastClickedMarker && lastClickedMarker !== marker) {
+        const prevIndex = markers.indexOf(lastClickedMarker);
+        lastClickedMarker.setIcon(createCircularMarkerIcon(`images/${locationConfigs[prevIndex].imageFile}`, 40));
+      }
+      marker.setIcon(createCircularMarkerIcon(`images/${location.imageFile}`, 48));
+      lastClickedMarker = marker;
+    
+      // Highlight the selected list item
+      document.querySelectorAll('#restaurant-list li').forEach((li, i) => {
+        li.classList.toggle('selected', i === index);
+      });
+    }
+
     
       detailsEl.innerHTML = html;
       showDetails();
