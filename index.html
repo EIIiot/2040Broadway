@@ -201,17 +201,20 @@
 
     function updateSidebar(place, location, marker, index) {
       const detailsEl = document.getElementById('restaurant-details');
-      let html = `<h2>${place.name}</h2>`;
-    
-      // Photo with fallback for CORS issues or missing images
+      let photoUrl = null;
       if (place.photos?.length) {
-        const photoUrl = place.photos[0].getUrl({ maxWidth: 400, maxHeight: 300 });
+        // Get Google photo URL here, dynamically
+        photoUrl = place.photos[0].getUrl({ maxWidth: 400, maxHeight: 300 });
+      }
+
+      let html = `<h2>${place.name}</h2>`;
+
+      if (photoUrl) {
         html += `
-          <img id="place-image"
-               src="${photoUrl}"
-               alt="${place.name}"
-               onerror="this.onerror=null;this.src='images/${location.imageFile}'" />
-        `;
+          <img id="place-image" 
+               src="${photoUrl}" 
+               alt="${place.name}" 
+               onerror="this.onerror=null;this.src='images/${location.imageFile}'" />`;
       } else {
         html += `<img id="place-image" src="images/${location.imageFile}" alt="${place.name}" />`;
       }
@@ -241,23 +244,6 @@
       lastClickedMarker = marker;
     
       // Highlight the selected list item
-      document.querySelectorAll('#restaurant-list li').forEach((li, i) => {
-        li.classList.toggle('selected', i === index);
-      });
-    }
-
-    
-      detailsEl.innerHTML = html;
-      showDetails();
-    
-      // Update marker icon
-      if (lastClickedMarker && lastClickedMarker !== marker) {
-        const prevIndex = markers.indexOf(lastClickedMarker);
-        lastClickedMarker.setIcon(createCircularMarkerIcon(`images/${locationConfigs[prevIndex].imageFile}`, 40));
-      }
-      marker.setIcon(createCircularMarkerIcon(`images/${location.imageFile}`, 48));
-      lastClickedMarker = marker;
-    
       document.querySelectorAll('#restaurant-list li').forEach((li, i) => {
         li.classList.toggle('selected', i === index);
       });
@@ -293,6 +279,7 @@
 
       const listEl = document.getElementById('restaurant-list');
       markers.length = 0;
+      listEl.innerHTML = '';
 
       locationConfigs.forEach((loc, index) => {
         const imgUrl = `images/${loc.imageFile}`;
