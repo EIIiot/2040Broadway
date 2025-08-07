@@ -202,30 +202,41 @@
     function updateSidebar(place, location, marker, index) {
       const detailsEl = document.getElementById('restaurant-details');
       let html = `<h2>${place.name}</h2>`;
-
+    
+      // Show local image if photo fails
       if (place.photos?.length) {
-        html += `<img id="place-image" src="${place.photos[0].getUrl({ maxWidth: 400, maxHeight: 300 })}" alt="${place.name}">`;
+        const photoUrl = place.photos[0].getUrl({ maxWidth: 400, maxHeight: 300 });
+        html += `
+          <img id="place-image" src="${photoUrl}" alt="${place.name}" onerror="this.onerror=null;this.src='images/${location.imageFile}'" />
+        `;
+      } else {
+        html += `<img id="place-image" src="images/${location.imageFile}" alt="${place.name}" />`;
       }
+    
       if (place.formatted_address) html += `<p><strong>Address:</strong> ${place.formatted_address}</p>`;
       if (place.formatted_phone_number) html += `<p><strong>Phone:</strong> ${place.formatted_phone_number}</p>`;
       if (place.rating) html += `<p><strong>Rating:</strong> ${place.rating} / 5</p>`;
       if (place.website) html += `<p><a href="${place.website}" target="_blank" rel="noopener noreferrer">Visit Website</a></p>`;
+    
       if (place.reviews?.length) {
         html += `<h3>Reviews:</h3><ul>`;
-        place.reviews.slice(0, 3).forEach(r => html += `<li><strong>${r.author_name}:</strong> ${r.text}</li>`);
+        place.reviews.slice(0, 3).forEach(r => {
+          html += `<li><strong>${r.author_name}:</strong> ${r.text}</li>`;
+        });
         html += `</ul>`;
       }
-
+    
       detailsEl.innerHTML = html;
       showDetails();
-
+    
+      // Update marker icon
       if (lastClickedMarker && lastClickedMarker !== marker) {
         const prevIndex = markers.indexOf(lastClickedMarker);
         lastClickedMarker.setIcon(createCircularMarkerIcon(`images/${locationConfigs[prevIndex].imageFile}`, 40));
       }
       marker.setIcon(createCircularMarkerIcon(`images/${location.imageFile}`, 48));
       lastClickedMarker = marker;
-
+    
       document.querySelectorAll('#restaurant-list li').forEach((li, i) => {
         li.classList.toggle('selected', i === index);
       });
